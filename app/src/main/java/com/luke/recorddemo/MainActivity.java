@@ -36,6 +36,7 @@ public class MainActivity extends Activity implements
     private String mVoiceUrl2 = "http://production1.mihua100.com/newmuhua/v1.0/Resource/id/7d8b207b-88fe-11e5-9517-00163e0004c9";
     public static MediaPlayer mediaPlayer;
     boolean isPlaying = false;
+    private String lastVoiceUrl;
 
 
     private static final String TAG = MainActivity.class.toString();
@@ -46,7 +47,7 @@ public class MainActivity extends Activity implements
     private TextView mTvRecordDuration, mTvRecordPath;
 
     private ImageView mRecordCancel;
-    private Button mBtnHoldRecording, mBtnVoice1,mBtnVoice2;
+    private Button mBtnHoldRecording, mBtnVoice1, mBtnVoice2;
 
     private MediaRecorder mMediaRecorder;
     private boolean mIsRecording;
@@ -54,6 +55,7 @@ public class MainActivity extends Activity implements
 
     private RecordTimerTask mRecordTimerTask;
     private long mRecordDuration = 0;
+
 
     /**
      * 語音訊息最多可以錄製多久, 單位是秒 *
@@ -76,11 +78,11 @@ public class MainActivity extends Activity implements
         mBtnHoldRecording = (Button) findViewById(R.id.btn_record);
         mBtnHoldRecording.setOnTouchListener(this);
 
-        mBtnVoice1 = (Button)findViewById(R.id.btn_voice);
+        mBtnVoice1 = (Button) findViewById(R.id.btn_voice);
         mBtnVoice1.setOnClickListener(this);
         mBtnVoice1.setTag(mVoiceUrl1);
 
-        mBtnVoice2 = (Button)findViewById(R.id.btn_voice2);
+        mBtnVoice2 = (Button) findViewById(R.id.btn_voice2);
         mBtnVoice2.setOnClickListener(this);
         mBtnVoice2.setTag(mVoiceUrl2);
 
@@ -299,12 +301,11 @@ public class MainActivity extends Activity implements
         animationDrawable.start();
 
         if (isPlaying) {
-            if (mediaPlayer!=null && mediaPlayer.isPlaying()) {
+            if (mediaPlayer != null) {
                 mediaPlayer.stop();
                 mediaPlayer.reset();
             }
         }
-
         /**
          * 下載錄音檔
          */
@@ -325,10 +326,15 @@ public class MainActivity extends Activity implements
 
     /**
      * 開始播放下載好的錄音
+     *
      * @param filep_path
      */
-    private void playFileVoice(String filep_path){
-        isPlaying=true;
+    private void playFileVoice(String filep_path) {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+            mediaPlayer.reset();
+        }
+        isPlaying = true;
         mediaPlayer = MediaPlayer.create(MainActivity.this, Uri.parse(filep_path));
         mediaPlayer.start();
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
