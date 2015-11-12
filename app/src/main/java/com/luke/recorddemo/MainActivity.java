@@ -4,7 +4,10 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Rect;
+import android.graphics.drawable.AnimationDrawable;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -16,6 +19,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.androidquery.AQuery;
+import com.androidquery.callback.AjaxCallback;
+import com.androidquery.callback.AjaxStatus;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -24,28 +31,37 @@ import java.util.Locale;
 
 
 public class MainActivity extends Activity implements
-        View.OnTouchListener{
+        View.OnTouchListener, View.OnClickListener {
+    private String mVoiceUrl1 = "http://production1.mihua100.com/newmuhua/v1.0/Resource/id/99bef1bc-88fe-11e5-9517-00163e0004c9";
+    private String mVoiceUrl2 = "http://production1.mihua100.com/newmuhua/v1.0/Resource/id/7d8b207b-88fe-11e5-9517-00163e0004c9";
+    public static MediaPlayer mediaPlayer;
+    boolean isPlaying = false;
+
 
     private static final String TAG = MainActivity.class.toString();
 
     public static final int RECORD_MODE_CLICK = 1;
     public static final int RECORD_MODE_HOLD = 2;
 
-    private TextView mTvRecordDuration,mTvRecordPath;
+    private TextView mTvRecordDuration, mTvRecordPath;
 
     private ImageView mRecordCancel;
-    private Button mBtnHoldRecording;
+    private Button mBtnHoldRecording, mBtnVoice1,mBtnVoice2;
 
     private MediaRecorder mMediaRecorder;
     private boolean mIsRecording;
     private String mRecordingFilePath;
 
     private RecordTimerTask mRecordTimerTask;
-    private long mRecordDuration =0;
+    private long mRecordDuration = 0;
 
-    /** 語音訊息最多可以錄製多久, 單位是秒 **/
+    /**
+     * 語音訊息最多可以錄製多久, 單位是秒 *
+     */
     public static final long MAX_RECORD_DURATION_IN_SECOND = 10 * 1000;
-    /** 語音訊息最短要錄製多久, 單位是秒 **/
+    /**
+     * 語音訊息最短要錄製多久, 單位是秒 *
+     */
     public static final long MIN_RECORD_DURATION_IN_SECOND = 1 * 1000;
 
     @Override
@@ -53,12 +69,22 @@ public class MainActivity extends Activity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mTvRecordDuration = (TextView)findViewById(R.id.tv_duration);
-        mTvRecordPath = (TextView)findViewById(R.id.tv_path);
+        mTvRecordDuration = (TextView) findViewById(R.id.tv_duration);
+        mTvRecordPath = (TextView) findViewById(R.id.tv_path);
 
-        mRecordCancel = (ImageView)findViewById(R.id.iv_record_cancel);
-        mBtnHoldRecording = (Button)findViewById(R.id.btn_record);
+        mRecordCancel = (ImageView) findViewById(R.id.iv_record_cancel);
+        mBtnHoldRecording = (Button) findViewById(R.id.btn_record);
         mBtnHoldRecording.setOnTouchListener(this);
+
+        mBtnVoice1 = (Button)findViewById(R.id.btn_voice);
+        mBtnVoice1.setOnClickListener(this);
+        mBtnVoice1.setTag(mVoiceUrl1);
+
+        mBtnVoice2 = (Button)findViewById(R.id.btn_voice2);
+        mBtnVoice2.setOnClickListener(this);
+        mBtnVoice2.setTag(mVoiceUrl2);
+
+
     }
 
     @Override
@@ -99,7 +125,7 @@ public class MainActivity extends Activity implements
                     // 在錄音按鈕上放開手指, 代表發送語音訊息
                     if (isHoverRecordButton) {
                         stopRecording(false);
-                    }else {
+                    } else {
                         stopRecording(true);
                     }
                 }
@@ -146,13 +172,12 @@ public class MainActivity extends Activity implements
      */
     private void sendRecording(String audioFilePath) {
 
-        if (mRecordDuration<MIN_RECORD_DURATION_IN_SECOND){
-            Toast.makeText(this, R.string.recording_less_1s,Toast.LENGTH_SHORT).show();
-        }else {
+        if (mRecordDuration < MIN_RECORD_DURATION_IN_SECOND) {
+            Toast.makeText(this, R.string.recording_less_1s, Toast.LENGTH_SHORT).show();
+        } else {
             mTvRecordPath.setText(audioFilePath);
         }
     }
-
 
 
     /**
@@ -182,9 +207,9 @@ public class MainActivity extends Activity implements
             @Override
             public void onUpdateTick(RecorderTimerTick tick) {
                 mRecordDuration = tick.durationInMillisecond;
-                mTvRecordDuration.setText(mRecordDuration/1000+"");
+                mTvRecordDuration.setText(mRecordDuration / 1000 + "");
 
-                if (mRecordDuration>=MAX_RECORD_DURATION_IN_SECOND){
+                if (mRecordDuration >= MAX_RECORD_DURATION_IN_SECOND) {
                     stopRecording(false);
                 }
             }
@@ -252,37 +277,103 @@ public class MainActivity extends Activity implements
         }
         mMediaRecorder.release();
 
-        if (isCancel){
+        if (isCancel) {
             cleanupInfo();
-        }else {
-            if (mRecordDuration>=MAX_RECORD_DURATION_IN_SECOND){
+        } else {
+            if (mRecordDuration >= MAX_RECORD_DURATION_IN_SECOND) {
                 promptSendVoiceClip();
-            }else {
+            } else {
                 sendRecording(mRecordingFilePath);
             }
         }
+    }
+
+    @Override
+    public void onClick(View view) {
+
+        mBtnVoice1.setBackgroundResource(R.drawable.ic_chat_voice_r);
+        mBtnVoice2.setBackgroundResource(R.drawable.ic_chat_voice_r);
+
+        view.setBackgroundResource(R.drawable.anim_voice);
+        AnimationDrawable animationDrawable = (AnimationDrawable) view.getBackground();
+        animationDrawable.start();
+
+        if (isPlaying) {
+            if (mediaPlayer!=null && mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+                mediaPlayer.reset();
+            }
+        }
+
+        /**
+         * 下載錄音檔
+         */
+        File ext = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS);
+        final File target = new File(ext, getPackageName().replace(".", "_") + "_voice.m4a");
+
+        AQuery aq = new AQuery(MainActivity.this);
+        aq.download(view.getTag().toString(), target, new AjaxCallback<File>() {
+
+            public void callback(String url, File file, AjaxStatus status) {
+
+                if (file != null) {
+                    playFileVoice(file.getPath());
+                }
+            }
+        });
+    }
+
+    /**
+     * 開始播放下載好的錄音
+     * @param filep_path
+     */
+    private void playFileVoice(String filep_path){
+        isPlaying=true;
+        mediaPlayer = MediaPlayer.create(MainActivity.this, Uri.parse(filep_path));
+        mediaPlayer.start();
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                isPlaying = false;
+
+                mp.reset();
+
+                mBtnVoice1.setBackgroundResource(R.drawable.ic_chat_voice_r);
+                mBtnVoice2.setBackgroundResource(R.drawable.ic_chat_voice_r);
+            }
+        });
     }
 
     /**
      * Callback event listener for {@link RecordTimerTask}
      */
     private interface OnRecordTimerEventListener {
-        /** 開始計時錄音的秒數 **/
+        /**
+         * 開始計時錄音的秒數 *
+         */
         public void onStartTick();
 
-        /** 更新 UI 顯示目前的錄音秒數 **/
+        /**
+         * 更新 UI 顯示目前的錄音秒數 *
+         */
         public void onUpdateTick(RecorderTimerTick tick);
 
-        /** 停止計時錄音的秒數 **/
+        /**
+         * 停止計時錄音的秒數 *
+         */
         public void onStopTick();
-    };
+    }
+
+    ;
 
     /**
      * Update progress for {@link RecordTimerTask}
      */
     private static class RecorderTimerTick {
         public long durationInMillisecond;
-    };
+    }
+
+    ;
 
     /**
      * 紀錄按住錄音, 總共錄了多久
@@ -335,6 +426,15 @@ public class MainActivity extends Activity implements
         public void onPostExecute(Void params) {
             mOnRecorderTimerListener.onStopTick();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.reset();
+        }
+        super.onPause();
     }
 
 }

@@ -47,6 +47,23 @@
         </LinearLayout>
     </LinearLayout>
 
+    <Button
+        android:id="@+id/btn_voice"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_alignParentRight="true"
+        android:layout_margin="20dp"
+        android:background="@drawable/anim_voice"/>
+
+    <Button
+        android:id="@+id/btn_voice2"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="100dp"
+        android:layout_marginRight="20dp"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/ic_chat_voice_r"/>
+
 
     <ImageView
         android:id="@+id/iv_record_cancel"
